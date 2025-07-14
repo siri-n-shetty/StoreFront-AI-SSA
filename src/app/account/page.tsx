@@ -21,7 +21,7 @@ export default function AccountPage() {
 
   const menuItems = [
     { icon: User, title: "Profile", description: "Manage your personal information.", href: "#" },
-    { icon: ShoppingBag, title: "Orders", description: "View your order history.", href: "#" },
+    { icon: ShoppingBag, title: "Orders", description: "View your order history.", href: "/orders" },
     { icon: Heart, title: "Wishlist", description: "See your saved items.", href: "/wishlist" },
   ];
 

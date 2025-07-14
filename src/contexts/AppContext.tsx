@@ -1,14 +1,18 @@
 
 "use client";
 
-import type { Product } from '@/lib/types';
+import type { Product, Order, OrderItem } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import React, { createContext, useContext, useState, useMemo, type ReactNode } from 'react';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface AppContextType {
   cartItems: Product[];
   addToCart: (product: Product) => void;
   removeFromCart: (productId: string) => void;
+  clearCart: () => void;
+  checkout: (userId: string, shippingAddress: Order['shippingAddress']) => Promise<void>;
   wishlistItems: Product[];
   addToWishlist: (product: Product) => void;
   removeFromWishlist: (productId: string) => void;
@@ -32,6 +36,65 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const removeFromCart = (productId: string) => {
     setCartItems((prevItems) => prevItems.filter((item) => item.id !== productId));
+  };
+
+  const clearCart = () => {
+    setCartItems([]);
+  };
+
+  const checkout = async (userId: string, shippingAddress: Order['shippingAddress']) => {
+    if (cartItems.length === 0) {
+      toast({
+        title: "Cart is empty",
+        description: "Add some items to your cart before checking out.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Create order items from cart
+      const orderItems: OrderItem[] = cartItems.map((product, index) => ({
+        id: `${product.id}-${Date.now()}-${index}`,
+        productId: product.id,
+        productName: product.name,
+        productImage: product.image,
+        price: product.price,
+        quantity: 1, // For now, we'll assume quantity is 1
+        total: product.price,
+      }));
+
+      const totalAmount = orderItems.reduce((sum, item) => sum + item.total, 0);
+
+      // Create order object
+      const order: Omit<Order, 'id'> = {
+        userId,
+        items: orderItems,
+        totalAmount,
+        status: 'pending',
+        orderDate: new Date().toISOString(),
+        deliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+        shippingAddress,
+      };
+
+      // Save to Firestore
+      await addDoc(collection(db, 'orders'), order);
+
+      // Clear cart
+      clearCart();
+
+      toast({
+        title: "Order placed successfully!",
+        description: `Your order of $${totalAmount.toFixed(2)} has been placed.`,
+      });
+    } catch (error) {
+      console.error('Error creating order:', error);
+      toast({
+        title: "Order failed",
+        description: "There was an error placing your order. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const addToWishlist = (product: Product) => {
@@ -69,6 +132,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     cartItems,
     addToCart,
     removeFromCart,
+    clearCart,
+    checkout,
     wishlistItems,
     addToWishlist,
     removeFromWishlist,

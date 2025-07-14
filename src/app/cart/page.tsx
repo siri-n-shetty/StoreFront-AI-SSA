@@ -22,10 +22,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 
 export default function CartPage() {
-  const { cartItems, removeFromCart } = useAppContext();
+  const { cartItems, removeFromCart, checkout } = useAppContext();
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showOrderConfirmation, setShowOrderConfirmation] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -38,16 +39,37 @@ export default function CartPage() {
 
   const subtotal = cartItems.reduce((acc, item) => acc + item.price, 0);
 
-  const handleCheckout = () => {
-    setShowOrderConfirmation(true);
+  const handleCheckout = async () => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    setIsCheckingOut(true);
+    
+    // Sample shipping address - in a real app, you'd collect this from the user
+    const sampleShippingAddress = {
+      street: "123 Main St",
+      city: "Anytown",
+      state: "CA",
+      zipCode: "12345",
+      country: "USA"
+    };
+
+    try {
+      await checkout(user.id, sampleShippingAddress);
+      setShowOrderConfirmation(true);
+    } catch (error) {
+      console.error('Checkout failed:', error);
+    } finally {
+      setIsCheckingOut(false);
+    }
   };
 
   const handleCloseConfirmation = () => {
     setShowOrderConfirmation(false);
-    // Clear cart by removing all items
-    cartItems.forEach(item => removeFromCart(item.id));
-    // Redirect to products page
-    router.push('/products');
+    // Redirect to orders page to see the new order
+    router.push('/orders');
   };
 
   const handleGetSuggestions = async () => {
@@ -116,8 +138,9 @@ export default function CartPage() {
                 <span>Total</span>
                 <span>${subtotal.toFixed(2)}</span>
               </div>
-              <Button size="lg" className="w-full mt-6" onClick={handleCheckout}>
-                Proceed to Checkout
+              <Button size="lg" className="w-full mt-6" onClick={handleCheckout} disabled={isCheckingOut}>
+                {isCheckingOut && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isCheckingOut ? "Processing..." : "Proceed to Checkout"}
               </Button>
             </div>
           </div>
@@ -158,12 +181,12 @@ export default function CartPage() {
             </DialogTitle>
             <DialogDescription className="text-center mt-2">
               Thank you for your purchase! Your order has been confirmed and will be processed shortly.
-              You'll receive an email confirmation with your order details.
+              You can view your order details in your account.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-6">
             <Button onClick={handleCloseConfirmation} className="w-full">
-              Continue Shopping
+              View My Orders
             </Button>
           </DialogFooter>
         </DialogContent>

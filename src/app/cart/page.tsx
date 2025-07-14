@@ -146,7 +146,7 @@ export default function CartPage() {
            <h2 className="text-2xl font-bold font-headline mb-2 flex items-center justify-center gap-2">
              <Bot /> Smart Cart Suggestions
            </h2>
-           <p className="text-muted-foreground mb-6">Let our AI find items you might like.</p>
+           <p className="text-muted-foreground mb-6">Let our AI find items you might like. (Feature under development)</p>
            <Button onClick={handleGetSuggestions} disabled={isLoading}>
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Get AI Suggestions

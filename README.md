@@ -1,13 +1,12 @@
 # StoreFront AI: The Smart Shopping Assistant
 
-A modern, AI-powered e-commerce platform built with Next.js 15 for ***Walmart Sparkathon 2025*** as a solution to the theme: *Reimagining Customer Experience*. This intelligent shopping assistant provides personalized recommendations, virtual try-on capabilities, and smart cart suggestions to enhance the online shopping experience.
+A modern, AI-powered e-commerce platform built with Next.js 15 for ***Walmart Sparkathon 2025*** as a solution to the theme: *Reimagining Customer Experience*. This intelligent shopping assistant provides personalized recommendations, virtual try-on capabilities, to enhance the online shopping experience.
 
 ## Features
 
 ### **AI-Powered Shopping Experience**
 
 - **AI Shopping Assistant** - Intelligent chatbot that helps users find products, answers questions, and provides personalized recommendations
-- **Smart Cart Suggestions** - AI-driven recommendations for complementary products based on cart contents
 - **Personalized Recommendations** - Machine learning algorithms suggest products based on user preferences and browsing history
 - **Virtual Try-On** - AR-powered virtual try-on for apparel items using advanced computer vision
 

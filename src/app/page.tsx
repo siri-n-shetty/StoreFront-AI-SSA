@@ -119,11 +119,10 @@ export default function Home() {
             </div>
             <div className="relative h-64 md:h-80 rounded-lg overflow-hidden">
                <Image 
-                src="https://placehold.co/600x400.png" 
-                alt="AI Assistant"
-                data-ai-hint="futuristic robot"
-                layout="fill"
-                objectFit="cover"
+                src="/features.png" 
+                alt="AI Assistant Features"
+                fill
+                style={{ objectFit: 'cover' }}
                 className="transition-transform duration-300 hover:scale-105"
               />
             </div>

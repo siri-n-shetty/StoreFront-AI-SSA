@@ -10,38 +10,42 @@ async function getProducts(category?: string): Promise<Product[]> {
     // Get products from local data first (primary source)
     let allProducts = [...localProducts];
 
-    // Get products from Firestore as fallback/supplement
-    try {
-      const productsCollection = collection(db, "products");
-      const q =
-        category && category !== "All"
-          ? query(productsCollection, where("category", "==", category))
-          : query(productsCollection);
+    // Get products from Firestore as fallback/supplement only if db is available
+    if (db) {
+      try {
+        const productsCollection = collection(db, "products");
+        const q =
+          category && category !== "All"
+            ? query(productsCollection, where("category", "==", category))
+            : query(productsCollection);
 
-      const snapshot = await getDocs(q);
-      const firestoreProducts = snapshot.docs.map((doc) => ({ 
-        id: doc.id, 
-        ...doc.data() 
-      } as Product));
+        const snapshot = await getDocs(q);
+        const firestoreProducts = snapshot.docs.map((doc) => ({ 
+          id: doc.id, 
+          ...doc.data() 
+        } as Product));
 
-      // Combine and deduplicate (local data takes priority)
-      const productMap = new Map();
-      
-      // Add local products first (they have priority)
-      allProducts.forEach(product => {
-        productMap.set(product.name, product);
-      });
-      
-      // Add Firestore products only if they don't exist in local data
-      firestoreProducts.forEach(product => {
-        if (!productMap.has(product.name)) {
+        // Combine and deduplicate (local data takes priority)
+        const productMap = new Map();
+        
+        // Add local products first (they have priority)
+        allProducts.forEach(product => {
           productMap.set(product.name, product);
-        }
-      });
+        });
+        
+        // Add Firestore products only if they don't exist in local data
+        firestoreProducts.forEach(product => {
+          if (!productMap.has(product.name)) {
+            productMap.set(product.name, product);
+          }
+        });
 
-      allProducts = Array.from(productMap.values());
-    } catch (firestoreError) {
-      console.warn("Firestore unavailable, using local data only:", firestoreError);
+        allProducts = Array.from(productMap.values());
+      } catch (firestoreError) {
+        console.warn("Firestore unavailable, using local data only:", firestoreError);
+      }
+    } else {
+      console.log("Firebase not configured, using local data only");
     }
 
     // Apply category filter if specified
@@ -54,7 +58,16 @@ async function getProducts(category?: string): Promise<Product[]> {
     return allProducts;
   } catch (error) {
     console.error("Error fetching products:", error);
-    return [];
+    // Return local products as fallback
+    let fallbackProducts = [...localProducts];
+    
+    if (category && category !== "All") {
+      fallbackProducts = fallbackProducts.filter(product => 
+        product.category.toLowerCase() === category.toLowerCase()
+      );
+    }
+    
+    return fallbackProducts;
   }
 }
 

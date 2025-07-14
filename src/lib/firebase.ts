@@ -7,6 +7,15 @@ import { collection, getDocs, writeBatch, doc } from "firebase/firestore";
 import type { Product } from "./types";
 import { products as localProducts } from './data';
 
+// Check if all required Firebase environment variables are available
+const isFirebaseConfigured = 
+  process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
+  process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
+  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+  process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET &&
+  process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID &&
+  process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
+
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -17,10 +26,22 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Initialize Firebase only if properly configured
+let app: any = null;
+let auth: any = null;
+let db: any = null;
+
+if (isFirebaseConfigured) {
+  try {
+    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+    auth = getAuth(app);
+    db = getFirestore(app);
+  } catch (error) {
+    console.warn("Firebase initialization failed:", error);
+  }
+} else {
+  console.warn("Firebase configuration is incomplete. Some features may not work.");
+}
 
 // Maps the local data from data.ts to our Product type
 function getProductsFromLocalData(): Omit<Product, 'id'>[] {
@@ -34,8 +55,13 @@ function getProductsFromLocalData(): Omit<Product, 'id'>[] {
 
 // Seed the database with products from data.ts if it's empty
 const seedProducts = async () => {
-    const productsCollectionRef = collection(db, "products");
+    if (!db || !isFirebaseConfigured) {
+        console.log("Firebase not configured, skipping product seeding.");
+        return;
+    }
+
     try {
+        const productsCollectionRef = collection(db, "products");
         const snapshot = await getDocs(productsCollectionRef);
         const existingProductNames = new Set(snapshot.docs.map(doc => doc.data().name));
         
@@ -70,9 +96,11 @@ const seedProducts = async () => {
     }
 };
 
-// Call the seeding function.
-if (typeof window === 'undefined') {
-    seedProducts();
+// Call the seeding function only if Firebase is configured and we're on the server
+if (typeof window === 'undefined' && isFirebaseConfigured && db) {
+    seedProducts().catch(error => {
+        console.warn("Failed to seed products during build:", error);
+    });
 }
 
 

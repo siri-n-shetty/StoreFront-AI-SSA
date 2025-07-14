@@ -11,6 +11,11 @@ async function getAllProducts(): Promise<Product[]> {
     id: product.id || `product-${index + 1}`
   }));
 
+  if (!db) {
+    console.log("Firebase not configured, using local data only");
+    return localProductsWithIds;
+  }
+
   try {
     // Try to get all products from Firestore
     const productsCollection = collection(db, "products");

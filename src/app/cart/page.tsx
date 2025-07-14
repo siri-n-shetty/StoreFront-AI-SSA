@@ -3,9 +3,17 @@
 
 import { useAppContext } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import Image from "next/image";
 import Link from "next/link";
-import { Trash2, X, Bot, Loader2 } from "lucide-react";
+import { Trash2, X, Bot, Loader2, CheckCircle } from "lucide-react";
 import { getSmartCartSuggestions } from "@/app/actions";
 import { useState, useEffect } from "react";
 import type { Product } from "@/lib/types";
@@ -17,6 +25,7 @@ export default function CartPage() {
   const { cartItems, removeFromCart } = useAppContext();
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showOrderConfirmation, setShowOrderConfirmation] = useState(false);
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -28,6 +37,18 @@ export default function CartPage() {
 
 
   const subtotal = cartItems.reduce((acc, item) => acc + item.price, 0);
+
+  const handleCheckout = () => {
+    setShowOrderConfirmation(true);
+  };
+
+  const handleCloseConfirmation = () => {
+    setShowOrderConfirmation(false);
+    // Clear cart by removing all items
+    cartItems.forEach(item => removeFromCart(item.id));
+    // Redirect to products page
+    router.push('/products');
+  };
 
   const handleGetSuggestions = async () => {
     setIsLoading(true);
@@ -95,7 +116,7 @@ export default function CartPage() {
                 <span>Total</span>
                 <span>${subtotal.toFixed(2)}</span>
               </div>
-              <Button size="lg" className="w-full mt-6">
+              <Button size="lg" className="w-full mt-6" onClick={handleCheckout}>
                 Proceed to Checkout
               </Button>
             </div>
@@ -124,6 +145,29 @@ export default function CartPage() {
           </div>
         )}
       </div>
+
+      {/* Order Confirmation Dialog */}
+      <Dialog open={showOrderConfirmation} onOpenChange={setShowOrderConfirmation}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="text-center">
+            <div className="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircle className="w-8 h-8 text-green-600" />
+            </div>
+            <DialogTitle className="text-2xl font-bold text-center">
+              Order Placed Successfully!
+            </DialogTitle>
+            <DialogDescription className="text-center mt-2">
+              Thank you for your purchase! Your order has been confirmed and will be processed shortly.
+              You'll receive an email confirmation with your order details.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-6">
+            <Button onClick={handleCloseConfirmation} className="w-full">
+              Continue Shopping
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

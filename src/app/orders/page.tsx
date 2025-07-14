@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAppContext } from "@/contexts/AppContext";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,14 +11,12 @@ import { ArrowLeft, Package, Calendar, MapPin } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Order } from "@/lib/types";
-import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 export default function OrdersPage() {
   const { user, loading } = useAuth();
+  const { orders } = useAppContext();
   const router = useRouter();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [userOrders, setUserOrders] = useState<Order[]>([]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -26,37 +25,12 @@ export default function OrdersPage() {
   }, [user, loading, router]);
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      if (!user) return;
-      
-      try {
-        const ordersCollection = collection(db, "orders");
-        const q = query(
-          ordersCollection,
-          where("userId", "==", user.id),
-          orderBy("orderDate", "desc")
-        );
-        
-        const snapshot = await getDocs(q);
-        const userOrders = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as Order));
-        
-        setOrders(userOrders);
-      } catch (error) {
-        console.error("Error fetching orders:", error);
-        // If no orders exist yet, show empty state
-        setOrders([]);
-      } finally {
-        setOrdersLoading(false);
-      }
-    };
-
-    if (user) {
-      fetchOrders();
+    if (user && orders) {
+      // Filter orders for the current user
+      const filteredOrders = orders.filter(order => order.userId === user.id);
+      setUserOrders(filteredOrders);
     }
-  }, [user]);
+  }, [user, orders]);
 
   const getStatusColor = (status: Order['status']) => {
     switch (status) {
@@ -77,7 +51,7 @@ export default function OrdersPage() {
     });
   };
 
-  if (loading || ordersLoading) {
+  if (loading) {
     return (
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <div className="animate-pulse">
@@ -112,7 +86,7 @@ export default function OrdersPage() {
         View your order history and track deliveries
       </p>
 
-      {orders.length === 0 ? (
+      {userOrders.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center">
             <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
@@ -127,7 +101,7 @@ export default function OrdersPage() {
         </Card>
       ) : (
         <div className="space-y-6">
-          {orders.map((order) => (
+          {userOrders.map((order) => (
             <Card key={order.id}>
               <CardHeader>
                 <div className="flex justify-between items-start">

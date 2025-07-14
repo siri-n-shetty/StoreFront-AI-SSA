@@ -22,7 +22,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 
 export default function CartPage() {
-  const { cartItems, removeFromCart, checkout } = useAppContext();
+  const { cartItems, removeFromCart, addOrder } = useAppContext();
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showOrderConfirmation, setShowOrderConfirmation] = useState(false);
@@ -45,25 +45,19 @@ export default function CartPage() {
       return;
     }
 
+    if (cartItems.length === 0) {
+      return;
+    }
+
     setIsCheckingOut(true);
     
-    // Sample shipping address - in a real app, you'd collect this from the user
-    const sampleShippingAddress = {
-      street: "123 Main St",
-      city: "Anytown",
-      state: "CA",
-      zipCode: "12345",
-      country: "USA"
-    };
-
-    try {
-      await checkout(user.id, sampleShippingAddress);
-      setShowOrderConfirmation(true);
-    } catch (error) {
-      console.error('Checkout failed:', error);
-    } finally {
+    // Simulate order processing with a delay
+    setTimeout(() => {
+      // Create the order
+      addOrder(user.id);
       setIsCheckingOut(false);
-    }
+      setShowOrderConfirmation(true);
+    }, 2000);
   };
 
   const handleCloseConfirmation = () => {
@@ -101,8 +95,8 @@ export default function CartPage() {
         <div className="grid lg:grid-cols-3 gap-12">
           <div className="lg:col-span-2">
             <div className="space-y-4">
-              {cartItems.map((item) => (
-                <div key={item.id} className="flex items-center gap-4 p-4 border rounded-lg">
+              {cartItems.map((item, index) => (
+                <div key={`${item.id}-${index}`} className="flex items-center gap-4 p-4 border rounded-lg">
                   <Image
                     src={item.image}
                     alt={item.name}
@@ -181,7 +175,7 @@ export default function CartPage() {
             </DialogTitle>
             <DialogDescription className="text-center mt-2">
               Thank you for your purchase! Your order has been confirmed and will be processed shortly.
-              You can view your order details in your account.
+              You'll receive an email confirmation with your order details.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-6">
